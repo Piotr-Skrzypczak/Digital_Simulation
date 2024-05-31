@@ -2,6 +2,7 @@ from parameters import Parameters
 from environment.bs import BaseStation
 from environment.user import User
 import numpy as np
+import math
 
 
 class MainLoop:
@@ -22,6 +23,15 @@ class MainLoop:
         for proces in self.processes:
             proces.service_time -= time
 
+    def count_of_bs_on(self):
+        bs_on = 0
+        for bs in self.bses:
+            bs.bs_usage()
+            if bs.bs_off == False:
+                bs_on += 1
+        return bs_on
+
+
     def execute_process(self):
         idx = 0
         bs_on = []
@@ -39,8 +49,12 @@ class MainLoop:
                         self.bses[ue.serving_cell].ues_in_cell.append(ue)
                         idx += 1
                     else:
-                        self.processes.append(self.processes[idx].add_ue())
-                        idx += 1
+                        ue = self.processes[idx].add_ue()
+                        if ue != None:
+                            self.processes.append(ue)
+                            idx += 1
+                        else:
+                            self.lost_ues+=1
 
                 elif isinstance(self.processes[idx], User):
                     try:
@@ -57,10 +71,7 @@ class MainLoop:
                 break
 
     def energy_saving_off(self):
-        bs_on = 0
-        for bs in self.bses:
-            if bs.bs_off == False:
-                bs_on +=1
+        bs_on = self.count_of_bs_on()
         if bs_on > 1:
             # exceeding level L:
             for bs in self.bses:
@@ -96,10 +107,44 @@ class MainLoop:
             self.bses[idx_bs_to_off].service_time = 1
             print(f'BS OFF {idx_bs_to_off}')
 
+    def energy_saving_on(self):
+
+        bs_on = self.count_of_bs_on()
+        if bs_on ==self.bs_count:
+            return
+        for bs in self.bses:
+            if bs.bs_off == True:
+                bs_to_turn_on_idx = bs.cell
+                break
 
 
+        #exceeding level H
+        for bs in self.bses:
+            if bs.rb_usage > self.H:
+                break
 
+        # turning ON BS and handovers
+        self.bses[bs_to_turn_on_idx].turn_on()
+        sum = 0
+        for bs in self.bses:
+             if bs.bs_off != True:
+                 sum += len(bs.ues_in_cell)
+        avg_rb_in_cell = sum / (bs_on + 1)
 
+        for bs in self.bses:
+            if bs.bs_off != True:
+                ues_to_handover = math.ceil(len(bs.ues_in_cell) - avg_rb_in_cell)
+                for ue in range(ues_to_handover):
+                    bs.ues_in_cell[0].serving_cell = bs_to_turn_on_idx
+                    try:
+                        self.bses[bs_to_turn_on_idx].ues_in_cell.append(bs.ues_in_cell[0])
+                    except ValueError as e:
+                        print('error3')
+                    try:
+                        bs.ues_in_cell.remove(bs.ues_in_cell[0])
+                    except:
+                        print('error 4')
+        print(f'BS ON {bs_to_turn_on_idx}')
 
 
     def run(self, max_time):
@@ -121,11 +166,11 @@ class MainLoop:
             self.decrement_time(self.processes[0].service_time) # todo tak nie moze zostac
             self.execute_process()
             self.sort_proceses()
-            if time > 9000:
+            if time > self.parameters.start_energy_saving:
                 self.energy_saving_off()
                 self.sort_proceses()
-                # self.energy_saving_on()
-                # self.sort_proceses()
+                self.energy_saving_on()
+                self.sort_proceses()
 
 
 

@@ -2,9 +2,10 @@
   "bs_count": 4,
   "rb" : 65,
   "time_service_min" : 1,
-  "time_service_max" : 30,
-  "L_BS_ON_OFF" : 10,
+  "time_service_max" : 400,
+  "L_BS_ON_OFF" : 40,
   "lambda_intensity" : 0.75,
-  "H" : 80,
-  "L" : 10
+  "H" : 70,
+  "L" : 30,
+  "start_energy_saving" : 1000
 }

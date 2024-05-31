@@ -14,18 +14,21 @@ class BaseStation:
         self.free_rb = self.max_rb
 
     def next_new_ue(self):
-        self.service_time = np.random.randint(low=self.parameters.time_service_min, high=5)
+        self.service_time = np.random.randint(low=self.parameters.time_service_min, high=2)
 
     def add_ue(self):
-        self.service_time = np.random.randint(low=self.parameters.time_service_min, high=5)
+        self.service_time = np.random.randint(low=self.parameters.time_service_min, high=2)
         ue = User(self.cell)
-        self.ues_in_cell.append(ue)
-        self.bs_usage()
-        return ue
+        if len(self.ues_in_cell) < self.max_rb:
+            self.ues_in_cell.append(ue)
+            self.bs_usage()
+            return ue
+        else:
+            return
 
     def gen_ue(self, bs_on):
         random_cell = np.random.randint(0,len(bs_on))
-        self.service_time = np.random.randint(low=self.parameters.time_service_min, high=5)
+        self.service_time = np.random.randint(low=self.parameters.time_service_min, high=2)
         ue = User(bs_on[random_cell])
         return ue
 
@@ -42,7 +45,8 @@ class BaseStation:
         self.ues_in_cell.append(ue_from_handover)
         self.bs_usage()
 
-
+    def turn_on(self):
+        self.bs_off = False
 
 
 
